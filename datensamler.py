@@ -20,7 +20,7 @@ import os
 msgID = itertools.count()
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-receiver = UBX_receiver("COM3", 115200)
+receiver = UBX_receiver("COM4", 115200)
 receiver.ubx_config_disable_all()
 receiver.ubx_config_enable("GGA_UART1","SFRBX_UART1", "RAWX_UART1")
 with open(os.path.join(dir_path,"output.o"), "w") as file:

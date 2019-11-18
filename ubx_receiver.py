@@ -6,6 +6,9 @@ Marcus Voß (m.voss@laposte.net)
 
 Description:
 Library for communication with the ublox F9T receiver
+
+License:
+MIT
 """
 import serial
 import logging
@@ -140,7 +143,7 @@ class UBX_receiver:
 
     def parse(self):
        
-        if (self.port.in_waiting > 0):#non blocking read
+        while (self.port.in_waiting > 0):#non blocking read
             logging.debug(f"mode: {self.current_parse} data {self.parse_data}")
             byte = self.port.read() 
             logging.debug(f"byte: {byte} lastbyte: {self.last_byte}")
@@ -148,11 +151,11 @@ class UBX_receiver:
                 if (byte == b'\x62' and self.last_byte == b'\xB5'):
                     self.current_parse = "UBX"
                     self.parse_data = []
-                    logging.info("received UBX start frame")
+                    logging.debug("received UBX start frame")
                 elif (byte == b'G' and self.last_byte == b'$'):
                     self.current_parse = "NMEA"
                     self.parse_data = [b'G']
-                    logging.info("received NMEA start frame")
+                    logging.debug("received NMEA start frame")
                 self.last_byte = byte
                 return
 
