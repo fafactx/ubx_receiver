@@ -111,7 +111,7 @@ ubx_config_dict = {
 
 
 class UBX_receiver:
-    serialport =  None
+    serialport = None
     baudrate = None
     port = None
     current_parse = None
@@ -122,7 +122,6 @@ class UBX_receiver:
         self.serialport = port
         self.baudrate = baudrate
         self.connect()
-
 
     def __del__(self):
         if self.port != None:
@@ -135,17 +134,18 @@ class UBX_receiver:
             except Exception as err:
                 print(f"lol this should not happen: {err}")
         logging.info(f"connectiong to {self.serialport}:{self.baudrate}")
-        self.port = serial.Serial(self.serialport, self.baudrate)  # open serial port
+        self.port = serial.Serial(
+            self.serialport, self.baudrate)  # open serial port
 
     def reset_data(self):
         self.parse_data = []
         self.current_parse = None
 
     def parse(self):
-       
-        while (self.port.in_waiting > 0):#non blocking read
+
+        while (self.port.in_waiting > 0):  # non blocking read
             logging.debug(f"mode: {self.current_parse} data {self.parse_data}")
-            byte = self.port.read() 
+            byte = self.port.read()
             logging.debug(f"byte: {byte} lastbyte: {self.last_byte}")
             if (self.current_parse == None):
                 if (byte == b'\x62' and self.last_byte == b'\xB5'):
@@ -184,8 +184,6 @@ class UBX_receiver:
                         message = "invalid nmea-message!"
                     self.reset_data()
                     return message
-        
-
 
     def ubx_msg(self, c, id, payload):
         '''generate a valid ubx message with checksum'''
@@ -237,7 +235,7 @@ class UBX_receiver:
             vals.append(ubx_config_dict[arg])
             vals.append(b'\x01')
         self.set_val(*vals)
-    
+
     def ubx_config_enable_all(self):
         '''disable all messages defined in config'''
         self.ubx_config_enable(*list(ubx_config_dict.keys()))
@@ -248,7 +246,9 @@ class UBX_message:
     sync = b'\xB5\x62'
     raw_data = None
     ubx_class = None
+    ubx_class_name = None
     ubx_id = None
+    ubx_id_name = None
     length = None
     payload = None
     checksum = None
@@ -264,18 +264,19 @@ class UBX_message:
         else:
             self.correct = True
             self.ubx_class = data[0]
+            self.ubx_class_name = safeget(ubx_msg_dict, bytes(
+                [self.ubx_class]), "classname") or "unknown"
             self.ubx_id = data[1]
+            self.ubx_id_name = safeget(ubx_msg_dict, bytes(
+                [self.ubx_class]), bytes([self.ubx_id])) or "unknown"
             self.length = int.from_bytes(data[2:4], 'little')
             self.payload = data[4:-2]
             if (len(self.payload) != self.length):
-                raise ValueError(f"payload length is incorrect ({len(self.payload)} != {self.length})")
+                raise ValueError(
+                    f"payload length is incorrect ({len(self.payload)} != {self.length})")
 
     def __str__(self):
-        classname = safeget(ubx_msg_dict, bytes(
-            [self.ubx_class]), "classname") or "unknown"
-        idname = safeget(ubx_msg_dict, bytes(
-            [self.ubx_class]), bytes([self.ubx_id])) or "unknown"
-        return f"ubx message (class:{classname} id:{idname} payload_length: {self.length})"
+        return f"ubx message (class:{self.ubx_class_name} id:{self.ubx_id_name} payload_length: {self.length})"
 
 
 class NMEA_message:
