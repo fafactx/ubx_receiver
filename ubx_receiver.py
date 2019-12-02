@@ -247,22 +247,24 @@ class UBX_message:
     correct = False
     sync = b'\xB5\x62'
     raw_data = None
-    cl = None
-    id = None
+    ubx_class = None
+    ubx_id = None
     length = None
     payload = None
     checksum = None
 
     def __init__(self, data):
+        if type(data) == list:
+            data = bytes(data)
         self.raw_data = self.sync+bytes(data)
         checksum = fletcher_checksum(self.raw_data[:-2])
-        if checksum != data[-2:]:
+        if list(checksum) != list(data[-2:]):
             raise ValueError(
                 f"wrong checksum {list(checksum)} is not {list(data[-2:])}")
         else:
             self.correct = True
-            self.cl = data[0]
-            self.id = data[1]
+            self.ubx_class = data[0]
+            self.ubx_id = data[1]
             self.length = int.from_bytes(data[2:4], 'little')
             self.payload = data[4:-2]
             if (len(self.payload) != self.length):
@@ -270,9 +272,9 @@ class UBX_message:
 
     def __str__(self):
         classname = safeget(ubx_msg_dict, bytes(
-            [self.cl]), "classname") or "unknown"
+            [self.ubx_class]), "classname") or "unknown"
         idname = safeget(ubx_msg_dict, bytes(
-            [self.cl]), bytes([self.id])) or "unknown"
+            [self.ubx_class]), bytes([self.ubx_id])) or "unknown"
         return f"ubx message (class:{classname} id:{idname} payload_length: {self.length})"
 
 
@@ -285,7 +287,8 @@ class NMEA_message:
     checksum = None
 
     def __init__(self, data):
-        data = data.decode()
+        if type(data) != str:
+            data = data.decode()
         self.raw_data = data
         self.talker_id = data[:2]
         self.msg_type = data[2:5]
