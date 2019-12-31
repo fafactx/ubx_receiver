@@ -98,7 +98,6 @@ def safeget(dict, *keys):
 
 
 ubx_config_dict = {
-    # ubx-config for UART1
     "GLL_UART1": b'\xCA\x00\x91\x20',
     "GSV_UART1": b'\xC5\x00\x91\x20',
     "GGA_UART1": b'\xbb\x00\x91\x20',
@@ -106,7 +105,8 @@ ubx_config_dict = {
     "RMC_UART1": b'\xAC\x00\x91\x20',
     "VTG_UART1": b'\xB1\x00\x91\x20',
     "RAWX_UART1": b'\xA5\x02\x91\x20',
-    "SFRBX_UART1": b'\x32\x02\x91\x20'
+    "SFRBX_UART1": b'\x32\x02\x91\x20',
+    "NAVSPG-DYNMODEL": b'\x21\x00\x11\x20'
 }
 
 
@@ -199,22 +199,24 @@ class UBX_receiver:
 
     def set_val(self, *args):
         '''set ubx config values'''
-        print(f"set val:{args}")
+        logging.debug(f"set val:{args}")
         if (len(args) % 2 != 0):
             raise ValueError("Number of arguments must be even!")
         c = b'\x06'
         id = b'\x8A'
         payload = b'\x00\x01\x00\x00'
         for arg in args:
-            if (type(arg) != bytes):
+            if (type(arg) == int):
                 arg = bytes([arg])
+            elif (type(arg) == str):
+                arg = ubx_config_dict[arg]
             payload += arg
 
         msg = self.ubx_msg(c, id, payload)
         # send the constructed ubx message to the receiver
         print(f"msg:{msg}")
         self.port.write(msg)
-        print("payload written")
+        logging.info("payload written")
 
     def ubx_config_disable(self, *args):
         '''disable ubx messages (multiple strings as argument)'''
@@ -233,7 +235,7 @@ class UBX_receiver:
         vals = []
         for arg in args:
             vals.append(ubx_config_dict[arg])
-            vals.append(b'\x01')
+            vals.append(b"\x01")
         self.set_val(*vals)
 
     def ubx_config_enable_all(self):
@@ -256,7 +258,10 @@ class UBX_message:
     def __init__(self, data):
         if type(data) == list:
             data = bytes(data)
-        self.raw_data = self.sync+bytes(data)
+        if data[:2] == self.sync:
+            data = data[2:]
+        self.raw_data = self.sync+data
+
         checksum = fletcher_checksum(self.raw_data[:-2])
         if list(checksum) != list(data[-2:]):
             raise ValueError(
