@@ -102,11 +102,14 @@ ubx_config_dict = {
     "GSV_UART1": b'\xC5\x00\x91\x20',
     "GGA_UART1": b'\xbb\x00\x91\x20',
     "GSA_UART1": b'\xC0\x00\x91\x20',
+    "GST_UART1": b'\xD4\x00\x91\x20',
     "RMC_UART1": b'\xAC\x00\x91\x20',
+    "ZDA_UART1": b'\xD9\x00\x91\x20',
     "VTG_UART1": b'\xB1\x00\x91\x20',
     "RAWX_UART1": b'\xA5\x02\x91\x20',
     "SFRBX_UART1": b'\x32\x02\x91\x20',
     "NAVSPG-DYNMODEL": b'\x21\x00\x11\x20'
+
 }
 
 
@@ -197,6 +200,12 @@ class UBX_receiver:
         msg += checksum
         return msg
 
+    def reset(self):
+        '''force-reset the receiver. This will reset all configuration to default'''
+        msg = self.ubx_msg(b'\x06', b'\x04', b'\x00\x00\x00\x00')
+        print(f"msg:{msg}")
+        self.port.write(msg)
+
     def set_val(self, *args):
         '''set ubx config values'''
         logging.debug(f"set val:{args}")
@@ -211,7 +220,6 @@ class UBX_receiver:
             elif (type(arg) == str):
                 arg = ubx_config_dict[arg]
             payload += arg
-
         msg = self.ubx_msg(c, id, payload)
         # send the constructed ubx message to the receiver
         print(f"msg:{msg}")
